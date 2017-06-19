@@ -66,21 +66,20 @@ class Config
             throw new InvalidArgumentException("No channel named '{$name}' found.");
         }
 
-        $channel = $this->channels[$name];
-        $channel['handlers'] = array_flip($channel['handlers']);
-        $channel['processors'] = array_flip($channel['processors']);
+        $handlers = $this->channels[$name]['handlers'];
+        $processors = $this->channels[$name]['processors'];
 
-        foreach (array_keys($channel['handlers']) as $handlerId) {
-            $channel['handlers'][$handlerId] = $this->resolveHandler($handlerId);
+        unset($this->channels[$name]['handlers'], $this->channels[$name]['processors']);
+
+        foreach ($handlers as $handlerId) {
+            $this->channels[$name]['handlers'][$handlerId] = $this->resolveHandler($handlerId);
         }
 
-        foreach (array_keys($channel['processors']) as $processorId) {
-            $channel['processors'][] = $this->resolveProcessor($processorId);
+        foreach ($processors as $processorId) {
+            $this->channels[$name]['processors'][$processorId] = $this->resolveProcessor($processorId);
         }
 
-        $this->channels[$name] = $channel;
-
-        return $channel;
+        return $this->channels[$name];
     }
 
     /**
