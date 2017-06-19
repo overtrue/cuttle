@@ -22,7 +22,7 @@ use Monolog\Registry;
 class Cuttle
 {
     /**
-     * @var array
+     * @var \Overtrue\Cuttle\Config
      */
     protected $config;
 
@@ -49,7 +49,7 @@ class Cuttle
     /**
      * @param string $name
      *
-     * @return mixed
+     * @return \Monolog\Logger
      */
     public function of(string $name)
     {
@@ -67,7 +67,7 @@ class Cuttle
     }
 
     /**
-     * @return array|\Overtrue\Cuttle\Config
+     * @return \Overtrue\Cuttle\Config
      */
     public function getConfig()
     {
@@ -77,7 +77,7 @@ class Cuttle
     /**
      * @param \Overtrue\Cuttle\Config $config
      *
-     * @return $this
+     * @return \Overtrue\Cuttle\Cuttle
      */
     public function setConfig(Config $config)
     {
