@@ -1,7 +1,8 @@
 {
     "name": "overtrue/cuttle",
-    "description": "A multi-module log tool.",
+    "description": "A multi-module log wrapper.",
     "type": "library",
+    "keywords": ["log", "multi logger", "monolog"],
     "require": {
         "php": "^7.0",
         "monolog/monolog": "~1.22"

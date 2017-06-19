@@ -1,6 +1,6 @@
 <h1 align="center">Cuttle</h1>
 
-<p align="center">:page_with_curl: A multi-module log tool..</p>
+<p align="center">:page_with_curl: A multi-module log wrapper.</p>
 
 <p align="center">
 <a href="https://travis-ci.org/overtrue/cuttle"><img src="https://travis-ci.org/overtrue/cuttle.svg?branch=master" alt="Build Status"></a>
