@@ -78,7 +78,9 @@ class Config
             $channel['processors'][] = $this->resolveProcessor($processorId);
         }
 
-        return $this->channels[$name] = $channel;
+        $this->channels[$name] = $channel;
+
+        return $channel;
     }
 
     /**
@@ -167,7 +169,7 @@ class Config
      * @param string $option
      * @param string $name
      *
-     * @return mixed
+     * @return object
      */
     protected function makeInstance($option, $name)
     {
@@ -221,10 +223,8 @@ class Config
     protected function formatHandlers(array $handlers = [])
     {
         foreach ($handlers as $id => $option) {
-            if (isset($option['formatter'])) {
-                if (!isset($this->formatters[$option['formatter']])) {
-                    throw new InvalidArgumentException(sprintf('Formatter %s not configured.', $option['formatter']));
-                }
+            if (isset($option['formatter']) && !isset($this->formatters[$option['formatter']])) {
+                throw new InvalidArgumentException(sprintf('Formatter %s not configured.', $option['formatter']));
             }
 
             if (isset($option['processors'])) {
