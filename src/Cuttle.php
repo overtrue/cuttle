@@ -49,7 +49,7 @@ class Cuttle
     /**
      * @param string $name
      *
-     * @return mixed
+     * @return Logger
      */
     public function of(string $name)
     {
