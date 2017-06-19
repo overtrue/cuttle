@@ -201,7 +201,7 @@ class Config
     protected function formatFormatters(array $formatters = [])
     {
         foreach ($formatters as $id => $option) {
-            $class = !empty($option['formatter']) ? $option['formatter'] : LineFormatter::class;
+            $class = $option['formatter'] ?? LineFormatter::class;
             unset($option['formatter']);
 
             $formatters[$id] = [
@@ -235,7 +235,7 @@ class Config
                 }
             }
 
-            $class = !empty($option['handler']) ? $option['handler'] : StreamHandler::class;
+            $class = $option['handler'] ?? StreamHandler::class;
             unset($option['handler']);
 
             $handlers[$id] = [
