@@ -156,7 +156,7 @@ class Config
      */
     protected function resolveProcessor(string $processorId)
     {
-        if (!$this->processors[$processorId] instanceof HandlerInterface) {
+        if (!is_callable($this->processors[$processorId])) {
             $this->processors[$processorId] = $this->makeInstance($this->processors[$processorId], 'processor');
         }
 
