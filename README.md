@@ -39,7 +39,7 @@ $config = [
     ],
     'handlers' => [
         'file' => [
-            'handler': \Monolog\Handler\StreamHandler::class,  // default
+            'handler' => \Monolog\Handler\StreamHandler::class,  // default
             'formatter' => 'dashed',
             'stream' => '/tmp/demo.log',
             'level' => 'info',
