@@ -255,7 +255,11 @@ class Config
     protected function formatProcessors(array $processors = [])
     {
         foreach ($processors as $id => $option) {
-            $class = $option['processor'] ?? LineFormatter::class;
+            if (empty($option['processor'])) {
+                continue;
+            }
+
+            $class = $option['processor'];
             unset($option['processor']);
 
             $processors[$id] = [
