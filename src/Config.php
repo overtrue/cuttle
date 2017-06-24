@@ -11,12 +11,12 @@
 
 namespace Overtrue\Cuttle;
 
+use Closure;
 use InvalidArgumentException;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Handler\StreamHandler;
-use ReflectionClass;
 
 /**
  * Class Config.
@@ -66,52 +66,46 @@ class Config
             throw new InvalidArgumentException("No channel named '{$name}' found.");
         }
 
-        $handlers = $this->channels[$name]['handlers'];
-        $processors = $this->channels[$name]['processors'];
-
-        unset($this->channels[$name]['handlers'], $this->channels[$name]['processors']);
-
-        foreach ($handlers as $handlerId) {
-            $this->channels[$name]['handlers'][$handlerId] = $this->resolveHandler($handlerId);
-        }
-
-        foreach ($processors as $processorId) {
-            $this->channels[$name]['processors'][$processorId] = $this->resolveProcessor($processorId);
-        }
+        $this->channels[$name]['handlers'] = $this->getHandlers($this->channels[$name]['handlers']);
+        $this->channels[$name]['processors'] = $this->getProcessors($this->channels[$name]['processors']);
 
         return $this->channels[$name];
     }
 
     /**
+     * @param array $names
+     *
      * @return array
      */
-    public function getFormatters()
+    protected function getFormatters(array $names)
     {
-        return $this->formatters;
+        return array_map(function ($name) {
+            return $this->getFormatter($name);
+        }, $names);
     }
 
     /**
+     * @param array $names
+     *
      * @return array
      */
-    public function getHandlers()
+    protected function getHandlers(array $names)
     {
-        return $this->handlers;
+        return array_map(function ($name) {
+            return $this->getHandler($name);
+        }, $names);
     }
 
     /**
+     * @param array $names
+     *
      * @return array
      */
-    public function getProcessors()
+    protected function getProcessors(array $names)
     {
-        return $this->processors;
-    }
-
-    /**
-     * @return array
-     */
-    public function getChannels()
-    {
-        return $this->channels;
+        return array_map(function ($name) {
+            return $this->getProcessor($name);
+        }, $names);
     }
 
     /**
@@ -119,10 +113,12 @@ class Config
      *
      * @return \Monolog\Formatter\FormatterInterface
      */
-    protected function resolveFormatter(string $formatterId)
+    protected function getFormatter(string $formatterId)
     {
         if (!$this->formatters[$formatterId] instanceof FormatterInterface) {
-            $this->formatters[$formatterId] = $this->makeInstance($this->formatters[$formatterId], 'formatter');
+            $this->formatters[$formatterId] = $this->makeInstance(
+                $this->formatters[$formatterId], 'formatter'
+            );
         }
 
         return $this->formatters[$formatterId];
@@ -133,21 +129,13 @@ class Config
      *
      * @return \Monolog\Handler\HandlerInterface
      */
-    protected function resolveHandler(string $handlerId)
+    protected function getHandler(string $handlerId)
     {
         if ($this->handlers[$handlerId] instanceof HandlerInterface) {
             return $this->handlers[$handlerId];
         }
 
-        if (!empty($this->handlers[$handlerId]['formatter'])) {
-            $this->handlers[$handlerId]['formatter'] = $this->resolveFormatter($this->handlers[$handlerId]['formatter']);
-        }
-
-        if (!empty($this->handlers[$handlerId]['processors'])) {
-            $this->handlers[$handlerId]['processors'] = $this->resolveFormatter($this->handlers[$handlerId]['processors']);
-        }
-
-        return $this->handlers[$handlerId] = $this->makeInstance($this->handlers[$handlerId], 'handler');
+        return $this->handlers[$handlerId] = $this->handlers[$handlerId]();
     }
 
     /**
@@ -155,25 +143,13 @@ class Config
      *
      * @return \Monolog\Handler\HandlerInterface
      */
-    protected function resolveProcessor(string $processorId)
+    protected function getProcessor(string $processorId)
     {
-        if (!is_callable($this->processors[$processorId])) {
-            $this->processors[$processorId] = $this->makeInstance($this->processors[$processorId], 'processor');
+        if ($this->processors[$processorId] instanceof Closure) {
+            $this->processors[$processorId] = $this->processors[$processorId]();
         }
 
         return $this->processors[$processorId];
-    }
-
-    /**
-     * @param string $option
-     * @param string $name
-     *
-     * @return object
-     */
-    protected function makeInstance($option, $name)
-    {
-        return (new ReflectionClass($option[$name]))
-            ->newInstanceArgs($option['args']);
     }
 
     /**
@@ -181,17 +157,10 @@ class Config
      */
     protected function parse(array $config): void
     {
-        $config = array_merge([
-            'handlers' => [],
-            'formatters' => [],
-            'processors' => [],
-            'channels' => [],
-        ], $config);
-
-        $this->formatters = $this->formatFormatters($config['formatters']);
-        $this->handlers = $this->formatHandlers($config['handlers']);
-        $this->processors = $this->formatProcessors($config['processors']);
-        $this->channels = $this->formatChannels($config['channels']);
+        $this->formatters = $this->formatFormatters($config['formatters'] ?? []);
+        $this->handlers = $this->formatHandlers($config['handlers'] ?? []);
+        $this->processors = $this->formatProcessors($config['processors'] ?? []);
+        $this->channels = $this->formatChannels($config['channels'] ?? []);
     }
 
     /**
@@ -205,10 +174,9 @@ class Config
             $class = $option['formatter'] ?? LineFormatter::class;
             unset($option['formatter']);
 
-            $formatters[$id] = [
-                'formatter' => $class,
-                'args' => $option,
-            ];
+            $formatters[$id] = function () use ($class, $option) {
+                return (new ClassResolver($class))->resolve($option);
+            };
         }
 
         return $formatters;
@@ -226,21 +194,28 @@ class Config
                 throw new InvalidArgumentException(sprintf('Formatter %s not configured.', $option['formatter']));
             }
 
-            if (isset($option['processors'])) {
-                foreach ($option['processors'] as $processorId) {
-                    if (!isset($this->processors[$processorId])) {
-                        throw new InvalidArgumentException(sprintf('Processor %s not configured.', $processorId));
-                    }
+            foreach ($option['processors'] ?? [] as $processorId) {
+                if (!isset($this->processors[$processorId])) {
+                    throw new InvalidArgumentException(sprintf('Processor %s not configured.', $processorId));
                 }
             }
 
             $class = $option['handler'] ?? StreamHandler::class;
             unset($option['handler']);
 
-            $handlers[$id] = [
-                'handler' => $class,
-                'args' => $option,
-            ];
+            $handlers[$id] = function () use ($class, $option) {
+                $handler = (new ClassResolver($class))->resolve($option);
+
+                if (!empty($option['formatter'])) {
+                    $handler->setFormatter($this->getFormatter($option['formatter']));
+                }
+
+                if (!empty($option['processors'])) {
+                    $handler->pushProcessor($this->getProcessors($option['processors']));
+                }
+
+                return $handler;
+            };
         }
 
         return $handlers;
@@ -261,10 +236,9 @@ class Config
             $class = $option['processor'];
             unset($option['processor']);
 
-            $processors[$id] = [
-                'processor' => $class,
-                'args' => $option,
-            ];
+            $processors[$id] = function () use ($class, $option) {
+                return (new ClassResolver($class))->resolve($option);
+            };
         }
 
         return $processors;
@@ -278,19 +252,15 @@ class Config
     protected function formatChannels(array $channels = [])
     {
         foreach ($channels as $id => $option) {
-            if (isset($option['processors'])) {
-                foreach ($option['processors'] as $processorId) {
-                    if (!isset($this->processors[$processorId])) {
-                        throw new InvalidArgumentException(sprintf('Processor %s not configured.', $processorId));
-                    }
+            foreach ($option['processors'] ?? [] as $processorId) {
+                if (!isset($this->processors[$processorId])) {
+                    throw new InvalidArgumentException(sprintf('Processor %s not configured.', $processorId));
                 }
             }
 
-            if (isset($option['handlers'])) {
-                foreach ($option['handlers'] as $handlerId) {
-                    if (!isset($this->handlers[$handlerId])) {
-                        throw new InvalidArgumentException(sprintf('Handler %s not configured.', $handlerId));
-                    }
+            foreach ($option['handlers'] ?? [] as $handlerId) {
+                if (!isset($this->handlers[$handlerId])) {
+                    throw new InvalidArgumentException(sprintf('Handler %s not configured.', $handlerId));
                 }
             }
             $channels[$id] = array_merge(['handlers' => [], 'processors' => []], $option);
