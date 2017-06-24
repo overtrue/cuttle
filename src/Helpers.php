@@ -28,7 +28,7 @@ function camel_case(string $str)
  *
  * @param string $str
  *
- * @return mixed|string
+ * @return string
  */
 function snake_case(string $str)
 {
