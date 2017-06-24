@@ -13,9 +13,7 @@ namespace Overtrue\Cuttle;
 
 use Closure;
 use InvalidArgumentException;
-use Monolog\Formatter\FormatterInterface;
 use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\HandlerInterface;
 use Monolog\Handler\StreamHandler;
 
 /**
@@ -115,10 +113,8 @@ class Config
      */
     protected function getFormatter(string $formatterId)
     {
-        if (!$this->formatters[$formatterId] instanceof FormatterInterface) {
-            $this->formatters[$formatterId] = $this->makeInstance(
-                $this->formatters[$formatterId], 'formatter'
-            );
+        if ($this->formatters[$formatterId] instanceof Closure) {
+            $this->formatters[$formatterId] = $this->formatters[$formatterId]();
         }
 
         return $this->formatters[$formatterId];
@@ -131,11 +127,11 @@ class Config
      */
     protected function getHandler(string $handlerId)
     {
-        if ($this->handlers[$handlerId] instanceof HandlerInterface) {
-            return $this->handlers[$handlerId];
+        if ($this->handlers[$handlerId] instanceof Closure) {
+            $this->handlers[$handlerId] = $this->handlers[$handlerId]();
         }
 
-        return $this->handlers[$handlerId] = $this->handlers[$handlerId]();
+        return $this->handlers[$handlerId];
     }
 
     /**
