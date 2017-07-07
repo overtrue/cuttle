@@ -44,6 +44,11 @@ class Config
     protected $channels = [];
 
     /**
+     * @var string
+     */
+    protected $defaultChannel = '';
+
+    /**
      * Config constructor.
      *
      * @param array $config
@@ -68,6 +73,18 @@ class Config
         $this->channels[$name]['processors'] = $this->getProcessors($this->channels[$name]['processors']);
 
         return $this->channels[$name];
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefaultChannel()
+    {
+        if (!$this->defaultChannel) {
+            throw new \LogicException('No default channel configured.');
+        }
+
+        return $this->defaultChannel;
     }
 
     /**
@@ -151,12 +168,13 @@ class Config
     /**
      * @param array $config
      */
-    protected function parse(array $config): void
+    protected function parse(array $config)
     {
         $this->formatters = $this->formatFormatters($config['formatters'] ?? []);
         $this->handlers = $this->formatHandlers($config['handlers'] ?? []);
         $this->processors = $this->formatProcessors($config['processors'] ?? []);
         $this->channels = $this->formatChannels($config['channels'] ?? []);
+        $this->defaultChannel = $config['default'];
     }
 
     /**

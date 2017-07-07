@@ -106,11 +106,7 @@ class Cuttle
      */
     public function getDefaultLogger()
     {
-        if (empty($this->config['default'])) {
-            throw new \LogicException('No default channel configured.');
-        }
-
-        return $this->getLogger($this->config['default']);
+        return $this->getLogger($this->config->getDefaultChannel());
     }
 
     /**
@@ -123,5 +119,20 @@ class Cuttle
     public function makeLogger(string $name, array $handlers = [], array $processors = [])
     {
         return new Logger($name, $handlers, $processors);
+    }
+
+    /**
+     * Magic call.
+     *
+     * @param string $method
+     * @param array  $args
+     *
+     * @return mixed
+     */
+    public function __call($method, $args)
+    {
+        $logger = $this->getDefaultLogger();
+
+        return call_user_func_array([$logger, $method], $args);
     }
 }
