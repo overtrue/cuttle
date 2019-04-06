@@ -44,7 +44,7 @@ class ClassResolver
     {
         $reflected = new ReflectionClass($this->class);
 
-        if ($reflected->getConstructor()->getNumberOfParameters() == 0) {
+        if (0 == $reflected->getConstructor()->getNumberOfParameters()) {
             return $reflected->newInstanceWithoutConstructor();
         }
 
